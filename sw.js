@@ -23,7 +23,8 @@ const SHELL = [
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // «reload» henter ferske filer fra serveren, ikke gamle kopier fra nettleserens mellomlager.
+  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (event) => {
@@ -57,7 +58,7 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.open(CACHE).then((c) =>
       c.match(isPage ? "./index.html" : req, { ignoreSearch: isPage }).then((hit) => {
-        const fresh = fetch(req).then((res) => {
+        const fresh = fetch(isPage ? "./index.html" : req.url, { cache: "no-cache" }).then((res) => {
           if (res.ok) c.put(isPage ? "./index.html" : req, res.clone());
           return res;
         }).catch(() => hit);

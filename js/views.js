@@ -268,6 +268,13 @@ function infoBox(b, st, closed) {
 function editForm(b) {
   const st = status(b);
   let html = '<form class="card stack" data-form="edit" data-id="' + esc(b.id) + '" novalidate><h3>Rediger betten</h3>';
+  if (st === "apen" && b.type === "valg") {
+    // Alternativene kan bare endres før noen har tippet, så ingen får tipset sitt endret under seg.
+    html += tippers(b).length
+      ? '<p class="note">Alternativene kan ikke endres fordi noen allerede har tippet.</p>'
+      : '<div class="field"><label class="lbl" for="e-opts">Alternativer, ett per linje</label><textarea id="e-opts">' + esc(b.options.join("\n")) + "</textarea>" +
+        '<span class="note">Kan endres til noen har tippet.</span></div>';
+  }
   if (st === "apen") {
     html += b.stakeMode === "kr"
       ? '<div class="field"><label class="lbl" for="e-stake">Innsats per person (kr)</label><input id="e-stake" type="number" min="1" step="1" inputmode="numeric" value="' + b.stake + '"></div>'

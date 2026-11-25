@@ -244,6 +244,14 @@ document.addEventListener("submit", (e) => {
       if (dlv <= Date.now()) return showErr(f, "Fristen må være frem i tid.");
       patch.deadline = dlv;
       patch.criteria = document.getElementById("e-criteria").value.trim();
+      const optsEl = document.getElementById("e-opts");
+      if (optsEl && b.type === "valg") {
+        if (Object.keys(b.tips || {}).length) return showErr(f, "Noen har tippet i mellomtiden, så alternativene kan ikke endres.");
+        let opts = optsEl.value.split("\n").map((s) => s.trim()).filter(Boolean);
+        opts = opts.filter((o, i) => opts.indexOf(o) === i);
+        if (opts.length < 2) return showErr(f, "Skriv inn minst to ulike alternativer.");
+        patch.options = opts;
+      }
       if (b.stakeMode === "kr") {
         const amt = Number(document.getElementById("e-stake").value);
         if (!(amt >= 1) || amt % 1 !== 0) return showErr(f, "Skriv inn innsatsen i hele kroner, minst 1 kr.");
