@@ -268,12 +268,19 @@ function infoBox(b, st, closed) {
 function editForm(b) {
   const st = status(b);
   let html = '<form class="card stack" data-form="edit" data-id="' + esc(b.id) + '" novalidate><h3>Rediger betten</h3>';
-  if (st === "apen" && b.type === "valg") {
-    // Alternativene kan bare endres før noen har tippet, så ingen får tipset sitt endret under seg.
-    html += tippers(b).length
-      ? '<p class="note">Alternativene kan ikke endres fordi noen allerede har tippet.</p>'
-      : '<div class="field"><label class="lbl" for="e-opts">Alternativer, ett per linje</label><textarea id="e-opts">' + esc(b.options.join("\n")) + "</textarea>" +
-        '<span class="note">Kan endres til noen har tippet.</span></div>';
+  if (st === "apen") {
+    // Spørsmål, type og alternativer kan bare endres før noen har tippet, så ingen får tipset sitt endret under seg.
+    if (Object.keys(b.tips || {}).length) {
+      html += '<p class="note">Spørsmål, type og alternativer kan ikke endres fordi noen allerede har tippet.</p>';
+    } else {
+      const types = [["tall", "Tall"], ["tid", "Tid"], ["valg", "Alternativer"], ["janei", "Ja/nei"]];
+      html += '<div class="field"><label class="lbl" for="e-q">Spørsmål</label><input id="e-q" type="text" autocomplete="off" value="' + esc(b.question) + '"></div>' +
+        '<fieldset class="field"><legend class="lbl">Type svar</legend><div class="seg" style="margin-top:6px">' +
+        types.map((t) => '<label class="opt"><input type="radio" name="e-type" value="' + t[0] + '"' + (b.type === t[0] ? " checked" : "") + "> <span>" + t[1] + "</span></label>").join("") + "</div></fieldset>" +
+        '<div class="field" data-eshow="tall"' + (b.type === "tall" ? "" : " hidden") + '><label class="lbl" for="e-unit">Enhet (valgfri)</label><input id="e-unit" type="text" placeholder="USD, kg, antall" autocomplete="off" value="' + esc(b.unit || "") + '"></div>' +
+        '<div class="field" data-eshow="valg"' + (b.type === "valg" ? "" : " hidden") + '><label class="lbl" for="e-opts">Alternativer, ett per linje</label><textarea id="e-opts">' + esc((b.options || []).join("\n")) + "</textarea></div>" +
+        '<p class="note">Spørsmål, type og alternativer kan endres til noen har tippet.</p>';
+    }
   }
   if (st === "apen") {
     html += b.stakeMode === "kr"

@@ -214,6 +214,9 @@ document.addEventListener("click", (e) => {
 });
 document.addEventListener("change", (e) => {
   if (e.target.name === "n-type" || e.target.name === "n-stake") syncNew();
+  if (e.target.name === "e-type") {
+    document.querySelectorAll("[data-eshow]").forEach((el) => { el.hidden = el.dataset.eshow !== e.target.value; });
+  }
 });
 
 /* ---------- Skjema ---------- */
@@ -244,13 +247,21 @@ document.addEventListener("submit", (e) => {
       if (dlv <= Date.now()) return showErr(f, "Fristen må være frem i tid.");
       patch.deadline = dlv;
       patch.criteria = document.getElementById("e-criteria").value.trim();
-      const optsEl = document.getElementById("e-opts");
-      if (optsEl && b.type === "valg") {
-        if (Object.keys(b.tips || {}).length) return showErr(f, "Noen har tippet i mellomtiden, så alternativene kan ikke endres.");
-        let opts = optsEl.value.split("\n").map((s) => s.trim()).filter(Boolean);
-        opts = opts.filter((o, i) => opts.indexOf(o) === i);
-        if (opts.length < 2) return showErr(f, "Skriv inn minst to ulike alternativer.");
-        patch.options = opts;
+      // Spørsmål, type og alternativer: bare før noen har tippet.
+      const qEl = document.getElementById("e-q");
+      if (qEl) {
+        if (Object.keys(b.tips || {}).length) return showErr(f, "Noen har tippet i mellomtiden, så spørsmål, type og alternativer kan ikke endres.");
+        const q = qEl.value.trim();
+        if (!q) return showErr(f, "Skriv inn et spørsmål.");
+        patch.question = q;
+        patch.type = document.querySelector('input[name="e-type"]:checked').value;
+        if (patch.type === "valg") {
+          let opts = document.getElementById("e-opts").value.split("\n").map((s) => s.trim()).filter(Boolean);
+          opts = opts.filter((o, i) => opts.indexOf(o) === i);
+          if (opts.length < 2) return showErr(f, "Skriv inn minst to ulike alternativer.");
+          patch.options = opts;
+        }
+        if (patch.type === "tall") patch.unit = document.getElementById("e-unit").value.trim();
       }
       if (b.stakeMode === "kr") {
         const amt = Number(document.getElementById("e-stake").value);
@@ -262,7 +273,11 @@ document.addEventListener("submit", (e) => {
         patch.stakeText = stx;
       }
     }
-    ui.editBet = false; patchBet(b, patch); render(); toast("Endringen er lagret");
+    ui.editBet = false; patchBet(b, patch);
+    // Rydd bort felt som ikke hører til den nye typen.
+    if (b.type !== "valg") delete b.options;
+    if (b.type !== "tall") delete b.unit;
+    save(); render(); toast("Endringen er lagret");
   } else if (kind === "new") {
     const q = document.getElementById("n-q").value.trim();
     const type = document.querySelector('input[name="n-type"]:checked').value;
