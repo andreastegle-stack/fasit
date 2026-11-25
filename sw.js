@@ -1,6 +1,6 @@
 // Service worker: gjør at Fasit starter uten nett.
 // Når du endrer filer i appen, øk VERSION så telefonene henter den nye versjonen.
-const VERSION = "v3";
+const VERSION = "v4";
 const CACHE = "fasit-" + VERSION;
 const FONT_CACHE = "fasit-fonter";
 

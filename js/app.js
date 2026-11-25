@@ -1,16 +1,18 @@
-// Oppstart, tegning av skjermen, ark som glir opp, og alle trykk og skjema.
+// Oppstart, tegning av skjermen, ark som glir opp, egne sider for skjemaer, og alle trykk og skjema.
 import { D, clone } from "./util.js";
 import {
   S, G, myId, getBet, save, setGroup, setMe, setSkin, patchBet, createBet, patchGroup, resetExample, createGroup, deleteGroup
 } from "./store.js";
 import { status, participants, checkVote, ledgerItems, netBetween, markKey } from "./rules.js";
-import { nav, ui, headerBar, whoBar, tabBar, viewList, sheetBet, sheetNew, sheetGroup, viewLedger, viewTable, readValue } from "./views.js";
+import { nav, ui, headerBar, whoBar, tabBar, viewList, sheetBet, pageNew, pageGroup, pageEdit, viewLedger, viewTable, readValue } from "./views.js";
 
 const root = document.documentElement;
 const $app = document.getElementById("app");
 const $sheet = document.getElementById("sheet");
 const $sheetBody = document.getElementById("sheet-body");
 const $toast = document.getElementById("toast");
+const $page = document.getElementById("page");
+const $pageBody = document.getElementById("page-body");
 
 /* ---------- Tema ---------- */
 function applySkin() {
@@ -34,12 +36,12 @@ function render() {
   ui.anim = null;
 }
 function renderSheet() {
-  $sheetBody.innerHTML = nav.sheet === "bet" ? sheetBet() : nav.sheet === "new" ? sheetNew() : sheetGroup();
+  $sheetBody.innerHTML = sheetBet();
 }
 
 /* ---------- Ark som glir opp nederfra ---------- */
-function resetSheetUi() { ui.editTip = false; ui.protestOpen = false; ui.editBet = false; }
-function openSheet(kind, id) {
+function resetSheetUi() { ui.editTip = false; ui.protestOpen = false; }
+function openSheet(kind, id, noPush) {
   const wasOpen = !!nav.sheet;
   nav.sheet = kind; nav.sheetId = id || null;
   resetSheetUi(); ui.groupMenu = false;
@@ -47,7 +49,7 @@ function openSheet(kind, id) {
   $sheetBody.scrollTop = 0;
   if (!wasOpen) {
     // Tilbake-knappen på Android lukker arket i stedet for å gå ut av appen.
-    try { history.pushState({ sheet: true }, ""); } catch (e) {}
+    if (!noPush) { try { history.pushState({ sheet: true }, ""); } catch (e) {} }
     $sheet.style.transform = "";
     void $sheet.offsetHeight; // les av layout først, så arket glir inn i stedet for å hoppe frem
     root.classList.add("sheet-open", "lock");
@@ -60,10 +62,51 @@ function closeSheet(fromHistory) {
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   $sheet.classList.remove("dragging");
   $sheet.style.transform = "";
-  root.classList.remove("sheet-open", "lock");
+  root.classList.remove("sheet-open");
+  if (!nav.page) root.classList.remove("lock");
   render();
 }
-window.addEventListener("popstate", () => { if (nav.sheet) closeSheet(true); });
+
+/* ---------- Egen side for skjemaer (ny bet, rediger, ny gruppe) ---------- */
+const PAGES = {
+  new: { title: "Ny bet", save: "Opprett", html: () => pageNew() },
+  edit: { title: "Rediger bet", save: "Lagre", html: () => pageEdit(getBet(nav.pageId)) },
+  group: { title: "Ny gruppe", save: "Lag", html: () => pageGroup() }
+};
+function openPage(kind, id) {
+  const def = PAGES[kind];
+  nav.page = kind; nav.pageId = id || null; ui.groupMenu = false;
+  document.getElementById("page-title").textContent = def.title;
+  document.getElementById("page-save").textContent = def.save;
+  // Siden tegnes bare når den åpnes, så det du skriver ikke forsvinner om resten av appen tegnes på nytt.
+  $pageBody.innerHTML = def.html();
+  $pageBody.scrollTop = 0;
+  render();
+  try { history.pushState({ page: true }, ""); } catch (e) {}
+  void $page.offsetHeight;
+  root.classList.add("page-open", "lock");
+}
+// then: "sheet" betyr at siden byttes ut med arket for en bet (etter at en ny bet er opprettet).
+function closePage(fromHistory, then) {
+  if (!nav.page) return;
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  if (then && then.sheet) {
+    try { history.replaceState({ sheet: true }, ""); } catch (e) {}
+    nav.page = null; nav.pageId = null;
+    openSheet("bet", then.sheet, true);
+    root.classList.remove("page-open");
+    return;
+  }
+  if (!fromHistory && history.state && history.state.page) { history.back(); return; }
+  nav.page = null; nav.pageId = null;
+  root.classList.remove("page-open");
+  if (!nav.sheet) root.classList.remove("lock");
+  render();
+}
+window.addEventListener("popstate", () => {
+  if (nav.page) closePage(true);
+  else if (nav.sheet) closeSheet(true);
+});
 
 // Dra arket nedover for å lukke det (fra håndtaket, eller fra innholdet når det er scrollet helt opp).
 (function dragToClose() {
@@ -123,11 +166,13 @@ if (window.visualViewport) {
 // Tastaturet glir inn og ut over litt tid, så vi måler på nytt når det har lagt seg.
 document.addEventListener("focusin", () => setTimeout(measureVV, 350));
 document.addEventListener("focusout", () => setTimeout(measureVV, 350));
-$sheetBody.addEventListener("focusin", (e) => {
+function keepFieldVisible(e) {
   const el = e.target;
   if (!el.matches("input, textarea")) return;
   setTimeout(() => { measureVV(); try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (x) {} }, 380);
-});
+}
+$sheetBody.addEventListener("focusin", keepFieldVisible);
+$pageBody.addEventListener("focusin", keepFieldVisible);
 
 /* ---------- Kort beskjed ---------- */
 let toastTimer = null;
@@ -157,7 +202,7 @@ document.addEventListener("click", (e) => {
     case "group":
       setGroup(el.dataset.id); nav.view = "bets"; ui.expanded = null; ui.inviteOpen = false; ui.statusTab = null; ui.groupMenu = false; ui.anim = "view";
       render(); window.scrollTo(0, 0); break;
-    case "new-group": ui.groupMenu = false; openSheet("group"); break;
+    case "new-group": ui.groupMenu = false; openPage("group"); break;
     case "delete-group":
       if (!ex && confirm("Slette gruppa «" + G().name + "» og alle bets i den? Dette kan ikke angres.")) {
         deleteGroup(S.groupId); nav.view = "bets"; ui.statusTab = null; ui.anim = "view"; render(); toast("Gruppa er slettet");
@@ -168,9 +213,10 @@ document.addEventListener("click", (e) => {
     case "nav":
       if (nav.view === el.dataset.view) { window.scrollTo({ top: 0, behavior: "smooth" }); break; }
       nav.view = el.dataset.view; ui.expanded = null; ui.groupMenu = false; ui.anim = "view"; render(); window.scrollTo(0, 0); break;
-    case "new-bet": openSheet("new"); break;
+    case "new-bet": openPage("new"); break;
     case "open": openSheet("bet", el.dataset.id); break;
     case "close-sheet": closeSheet(); break;
+    case "close-page": closePage(); break;
     case "me": setMe(el.dataset.id); resetSheetUi(); ui.expanded = null; render(); break;
     case "reset": if (ex && confirm("Nullstille eksempelgruppa til slik den var fra start?")) { resetExample(); ui.expanded = null; render(); toast("Eksempelet er nullstilt"); } break;
     case "invite": ui.inviteOpen = !ui.inviteOpen; render(); break;
@@ -192,8 +238,7 @@ document.addEventListener("click", (e) => {
       break;
     case "edit-tip": ui.editTip = true; render(); break;
     case "cancel-edit": ui.editTip = false; render(); break;
-    case "edit-open": ui.editBet = true; render(); break;
-    case "edit-close": ui.editBet = false; render(); break;
+    case "edit-open": if (b || nav.sheetId) openPage("edit", (b && b.id) || nav.sheetId); break;
     case "ff-deadline": if (b && ex) { patchBet(b, { deadline: Date.now() - 60e3 }); render(); } break;
     case "ff-protest": if (b && ex && b.result) { patchBet(b, { result: { at: Date.now() - D - 60e3 } }); render(); } break;
     case "protest-open": ui.protestOpen = true; render(); break;
@@ -273,11 +318,11 @@ document.addEventListener("submit", (e) => {
         patch.stakeText = stx;
       }
     }
-    ui.editBet = false; patchBet(b, patch);
+    patchBet(b, patch);
     // Rydd bort felt som ikke hører til den nye typen.
     if (b.type !== "valg") delete b.options;
     if (b.type !== "tall") delete b.unit;
-    save(); render(); toast("Endringen er lagret");
+    save(); closePage(); toast("Endringen er lagret");
   } else if (kind === "new") {
     const q = document.getElementById("n-q").value.trim();
     const type = document.querySelector('input[name="n-type"]:checked').value;
@@ -306,7 +351,7 @@ document.addEventListener("submit", (e) => {
       if (!nb.stakeText) return showErr(f, "Skriv hva dere spiller om, for eksempel en øl.");
     }
     createBet(nb); ui.statusTab = "apen"; nav.view = "bets";
-    openSheet("bet", nb.id); toast("Betten er opprettet");
+    closePage(false, { sheet: nb.id }); toast("Betten er opprettet");
   } else if (kind === "group") {
     const name = document.getElementById("g-name").value.trim();
     let members = document.getElementById("g-members").value.split("\n").map((s) => s.trim()).filter(Boolean);
@@ -316,7 +361,7 @@ document.addEventListener("submit", (e) => {
     const g = createGroup(name, members);
     setGroup(g.id); setMe(g.members[0].id);
     nav.view = "bets"; ui.statusTab = null; ui.expanded = null; ui.anim = "view";
-    closeSheet(); window.scrollTo(0, 0); toast("Gruppa er laget");
+    closePage(); window.scrollTo(0, 0); toast("Gruppa er laget");
   }
 });
 
@@ -334,12 +379,16 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     // Ny versjon er lastet ned: last inn på nytt, men ikke midt i et skjema eller et åpent ark.
     if (!hadController || reloading) return;
-    const busy = nav.sheet || (document.activeElement && document.activeElement.closest && document.activeElement.closest("form"));
+    const busy = nav.sheet || nav.page || (document.activeElement && document.activeElement.closest && document.activeElement.closest("form"));
     if (busy) return;
     reloading = true; location.reload();
   });
   window.addEventListener("load", () => { navigator.serviceWorker.register("./sw.js").catch(() => {}); });
 }
+
+// Ble appen lastet på nytt mens et ark eller en side var åpen, nullstiller vi historikken,
+// så tilbakeknappen ikke tar deg ut av appen neste gang.
+try { if (history.state && (history.state.sheet || history.state.page)) history.replaceState(null, ""); } catch (e) {}
 
 applySkin();
 save();

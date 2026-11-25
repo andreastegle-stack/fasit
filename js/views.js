@@ -7,8 +7,8 @@ import {
 } from "./rules.js";
 
 // Tilstand for visningen (ikke lagret).
-export const nav = { view: "bets", sheet: null, sheetId: null };
-export const ui = { editTip: false, inviteOpen: false, protestOpen: false, editBet: false, expanded: null, statusTab: null, groupMenu: false, anim: null };
+export const nav = { view: "bets", sheet: null, sheetId: null, page: null, pageId: null };
+export const ui = { editTip: false, inviteOpen: false, protestOpen: false, expanded: null, statusTab: null, groupMenu: false, anim: null };
 
 /* ---------- Formatering som trenger betten ---------- */
 function fmtVal(b, v) {
@@ -265,9 +265,10 @@ function infoBox(b, st, closed) {
     (b.criteria ? '<p class="rules">' + esc(b.criteria) + '</p><p class="note">Satt av ' + esc(nm(b.host)) + ". " + (st === "apen" ? "Låses når fristen går ut." : "Låst.") + "</p>" : "") +
     (b.note ? '<p class="rules note">' + esc(b.note) + "</p>" : "") + "</details>";
 }
-function editForm(b) {
+export function pageEdit(b) {
+  if (!b) return '<p class="note">Fant ikke betten.</p>';
   const st = status(b);
-  let html = '<form class="card stack" data-form="edit" data-id="' + esc(b.id) + '" novalidate><h3>Rediger betten</h3>';
+  let html = '<form class="stack page-form" id="page-form" data-form="edit" data-id="' + esc(b.id) + '" novalidate><p class="note">' + esc(b.question) + '</p>';
   if (st === "apen") {
     // Spørsmål, type og alternativer kan bare endres før noen har tippet, så ingen får tipset sitt endret under seg.
     if (Object.keys(b.tips || {}).length) {
@@ -291,7 +292,7 @@ function editForm(b) {
       esc(b.criteria || "") + '</textarea><span class="note">Låses når fristen går ut.</span></div>';
   }
   html += '<div class="field"><label class="lbl" for="e-note">Utgangspunkt og forklaring</label><textarea id="e-note">' + esc(b.note || "") + "</textarea></div>" +
-    '<p class="err" role="alert"></p><div class="btns"><button class="btn btn-primary" type="submit">Lagre</button><button class="btn btn-ghost" type="button" data-act="edit-close">Avbryt</button></div></form>';
+    '<p class="err" role="alert"></p><button class="btn btn-primary btn-block" type="submit">Lagre</button></form>';
   return html;
 }
 
@@ -301,8 +302,7 @@ export function sheetBet() {
   const st = status(b), me = myId(), mine = (b.tips || {})[me], ex = G().example;
   let html = '<section class="card"><div class="row"><span class="pill pill-' + st + '">' + STATUS[st] + "</span>" + (myTurn(b) ? '<span class="pill pill-turn">Din tur</span>' : "") + "</div>" +
     "<h2>" + esc(b.question) + "</h2>" + chips(b, true) + infoBox(b, st, !(st === "apen" && !mine)) +
-    (b.host === me && !b.result && !ui.editBet ? '<div><button class="btn btn-ghost btn-small" data-act="edit-open">Rediger</button></div>' : "") + "</section>";
-  if (ui.editBet && b.host === me && !b.result) html += editForm(b);
+    (b.host === me && !b.result ? '<div><button class="btn btn-ghost btn-small" data-act="edit-open">Rediger</button></div>' : "") + "</section>";
 
   if (st === "apen") {
     if (mine && !ui.editTip) {
@@ -376,12 +376,12 @@ export function sheetBet() {
   return html + resultBlock(b, false);
 }
 
-/* ---------- Ark: ny bet og ny gruppe ---------- */
-export function sheetNew() {
+/* ---------- Egne sider: ny bet, rediger og ny gruppe ---------- */
+export function pageNew() {
   const dl = new Date(Date.now() + 3 * D); dl.setMinutes(0, 0, 0);
   const types = [["tall", "Tall"], ["tid", "Tid"], ["valg", "Alternativer"], ["janei", "Ja/nei"]];
-  return '<form class="stack" data-form="new" novalidate style="gap:16px"><h2>Ny bet i ' + esc(G().name) + "</h2>" +
-    '<p class="note">Du blir vert for betten (' + esc(nm(myId())) + "). Verten bestemmer alternativer og innsats.</p>" +
+  return '<form class="stack page-form" id="page-form" data-form="new" novalidate>' +
+    '<p class="note">Ny bet i ' + esc(G().name) + '. Du blir vert for betten (' + esc(nm(myId())) + "). Verten bestemmer alternativer og innsats.</p>" +
     '<div class="field"><label class="lbl" for="n-q">Spørsmål</label><input id="n-q" type="text" placeholder="Hvem kommer sist til festen?" autocomplete="off" enterkeyhint="next"></div>' +
     '<fieldset class="field"><legend class="lbl">Type svar</legend><div class="seg" style="margin-top:6px">' +
     types.map((t, i) => '<label class="opt"><input type="radio" id="n-type-' + t[0] + '" name="n-type" value="' + t[0] + '"' + (i === 0 ? " checked" : "") + "> <span>" + t[1] + "</span></label>").join("") + "</div></fieldset>" +
@@ -396,15 +396,15 @@ export function sheetNew() {
     '<div class="field" data-show="tekst" hidden><label class="lbl" for="n-stext">Hva spiller dere om?</label><input id="n-stext" type="text" placeholder="En øl, en straff eller bare æren" autocomplete="off"></div>' +
     '<div class="field"><label class="lbl" for="n-criteria">Kriterier for avgjørelse (valgfri)</label><textarea id="n-criteria" placeholder="Når er svaret ja? Hvilken kilde gjelder? Hva skjer hvis det er uklart?"></textarea><span class="note">Låses når fristen går ut.</span></div>' +
     '<div class="field"><label class="lbl" for="n-note">Utgangspunkt og forklaring (valgfri)</label><textarea id="n-note" placeholder="For eksempel dagens kurs, eller hvordan fasit avgjøres"></textarea></div>' +
-    '<p class="err" role="alert"></p><div class="btns"><button class="btn btn-primary" type="submit">Opprett bet</button><button class="btn btn-ghost" type="button" data-act="close-sheet">Avbryt</button></div></form>';
+    '<p class="err" role="alert"></p><button class="btn btn-primary btn-block" type="submit">Opprett bet</button></form>';
 }
-export function sheetGroup() {
-  return '<form class="stack" data-form="group" novalidate style="gap:16px"><h2>Ny gruppe</h2>' +
+export function pageGroup() {
+  return '<form class="stack page-form" id="page-form" data-form="group" novalidate>' +
     '<p class="note">Gruppa lagres bare på denne telefonen. Dere kan bruke samme telefon og bytte med «Hvem tipper nå?» øverst.</p>' +
     '<div class="field"><label class="lbl" for="g-name">Navn på gruppa</label><input id="g-name" type="text" placeholder="Hyttegjengen" autocomplete="off" enterkeyhint="next"></div>' +
     '<div class="field"><label class="lbl" for="g-members">Hvem er med? Ett navn per linje</label><textarea id="g-members" placeholder="Deg selv først&#10;Neste person&#10;…"></textarea>' +
     '<span class="note">Første navn blir valgt som deg.</span></div>' +
-    '<p class="err" role="alert"></p><div class="btns"><button class="btn btn-primary" type="submit">Lag gruppa</button><button class="btn btn-ghost" type="button" data-act="close-sheet">Avbryt</button></div></form>';
+    '<p class="err" role="alert"></p><button class="btn btn-primary btn-block" type="submit">Lag gruppa</button></form>';
 }
 
 /* ---------- Oppgjør og tabell ---------- */

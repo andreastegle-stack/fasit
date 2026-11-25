@@ -44,6 +44,16 @@
     </div>
   </div>
 
+  <!-- Egen side for skjemaer (ny bet, rediger, ny gruppe): glir inn fra høyre -->
+  <div class="page" id="page" role="dialog" aria-modal="true" aria-labelledby="page-title">
+    <header class="page-bar">
+      <button class="page-btn" data-act="close-page">Avbryt</button>
+      <h1 class="page-title" id="page-title"></h1>
+      <button class="page-btn page-save" id="page-save" type="submit" form="page-form">Lagre</button>
+    </header>
+    <div class="page-body" id="page-body"></div>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <noscript><p style="padding:24px">Fasit trenger JavaScript.</p></noscript>
 </body>
