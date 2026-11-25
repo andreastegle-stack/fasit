@@ -49,7 +49,8 @@ function openSheet(kind, id) {
     // Tilbake-knappen på Android lukker arket i stedet for å gå ut av appen.
     try { history.pushState({ sheet: true }, ""); } catch (e) {}
     $sheet.style.transform = "";
-    requestAnimationFrame(() => root.classList.add("sheet-open", "lock"));
+    void $sheet.offsetHeight; // les av layout først, så arket glir inn i stedet for å hoppe frem
+    root.classList.add("sheet-open", "lock");
   }
 }
 function closeSheet(fromHistory) {
@@ -101,20 +102,31 @@ window.addEventListener("popstate", () => { if (nav.sheet) closeSheet(true); });
   });
 })();
 
-// Når tastaturet er oppe, krymper arket så feltet du skriver i synes.
+// Når tastaturet er oppe, skal arket ligge rett over tastaturet og krympe så feltet du skriver i synes.
+// Telefonene gjør dette ulikt: noen flytter faste elementer opp selv (nyere iPhone), andre lar tastaturet
+// dekke dem. Vi måler derfor hvor bunnen av skjermen faktisk havner, og løfter arket bare det som mangler.
+let measureVV = () => {};
 if (window.visualViewport) {
   const vv = window.visualViewport;
-  const onVV = () => {
-    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+  const probe = document.createElement("div");
+  probe.setAttribute("aria-hidden", "true");
+  probe.style.cssText = "position:fixed;left:0;bottom:0;width:1px;height:0;visibility:hidden;pointer-events:none";
+  document.body.appendChild(probe);
+  measureVV = () => {
+    const hidden = probe.getBoundingClientRect().bottom - vv.offsetTop - vv.height;
+    const kb = hidden > 1 ? Math.round(hidden) : 0;
     root.style.setProperty("--kb", kb + "px");
-    root.style.setProperty("--vvh", vv.height + "px");
+    root.style.setProperty("--vvh", Math.round(vv.height) + "px");
   };
-  vv.addEventListener("resize", onVV); vv.addEventListener("scroll", onVV); onVV();
+  vv.addEventListener("resize", measureVV); vv.addEventListener("scroll", measureVV); measureVV();
 }
+// Tastaturet glir inn og ut over litt tid, så vi måler på nytt når det har lagt seg.
+document.addEventListener("focusin", () => setTimeout(measureVV, 350));
+document.addEventListener("focusout", () => setTimeout(measureVV, 350));
 $sheetBody.addEventListener("focusin", (e) => {
   const el = e.target;
   if (!el.matches("input, textarea")) return;
-  setTimeout(() => { try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (x) {} }, 320);
+  setTimeout(() => { measureVV(); try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (x) {} }, 380);
 });
 
 /* ---------- Kort beskjed ---------- */
