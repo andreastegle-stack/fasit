@@ -2,10 +2,10 @@
 // Eksempelgruppa «Gjengen» har oppdiktede navn og bets. Egne grupper kan lages i gruppemenyen.
 import { D, H, hms, deepMerge } from "./util.js";
 
-const LS_DATA = "vennebets-data-v1";
-const LS_GROUP = "vennebets-gruppe";
-const LS_ME = "vennebets-hvem";
-const LS_PREFS = "vennebets-visning";
+const LS_DATA = "fasit-data-v1";
+const LS_GROUP = "fasit-gruppe";
+const LS_ME = "fasit-hvem";
+const LS_PREFS = "fasit-visning";
 export const EXAMPLE_ID = "gjengen";
 
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }

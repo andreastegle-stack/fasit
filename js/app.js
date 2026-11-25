@@ -165,7 +165,7 @@ document.addEventListener("click", (e) => {
     case "copy": {
       const inp = document.getElementById("invite-link");
       const fallback = () => { inp.focus(); inp.select(); el.textContent = "Marker og kopier"; };
-      try { navigator.clipboard.writeText("https://" + inp.value).then(() => { el.textContent = "Kopiert"; }, fallback); } catch (err) { fallback(); }
+      try { navigator.clipboard.writeText(inp.value).then(() => { el.textContent = "Kopiert"; }, fallback); } catch (err) { fallback(); }
       break;
     }
     case "expand":

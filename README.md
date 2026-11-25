@@ -1,4 +1,4 @@
-# Vennebets
+# Fasit
 
 Veddemål og spådommer i vennegjengen. Appen er dommer og regnskapsfører. Ingen penger går gjennom appen, og gjeld gjøres opp utenfor.
 

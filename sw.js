@@ -1,8 +1,8 @@
-// Service worker: gjør at Vennebets starter uten nett.
+// Service worker: gjør at Fasit starter uten nett.
 // Når du endrer filer i appen, øk VERSION så telefonene henter den nye versjonen.
 const VERSION = "v1";
-const CACHE = "vennebets-" + VERSION;
-const FONT_CACHE = "vennebets-fonter";
+const CACHE = "fasit-" + VERSION;
+const FONT_CACHE = "fasit-fonter";
 
 const SHELL = [
   "./",

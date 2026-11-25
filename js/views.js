@@ -178,7 +178,7 @@ export function viewList() {
     (g.example ? '<button class="btn btn-ghost btn-small" data-act="invite" aria-expanded="' + ui.inviteOpen + '">Inviter</button>' : "") + "</div>";
   if (g.example && ui.inviteOpen) {
     html += '<div class="card"><h3>Inviter med lenke</h3><p class="note">Del lenken i gruppechatten. Den som åpner den, blir med i gruppa. (Eksempellenke. Deling kommer når appen får en server.)</p>' +
-      '<div class="invite"><input id="invite-link" type="text" readonly value="vennebets.no/bli-med/gjengen-k7f2"><button class="btn btn-ghost btn-small" data-act="copy">Kopier</button></div></div>';
+      '<div class="invite"><input id="invite-link" type="text" readonly value="…/bli-med/gjengen-k7f2"><button class="btn btn-ghost btn-small" data-act="copy">Kopier</button></div></div>';
   }
   if (!g.bets.length) return html + '<div class="card"><p>Ingen bets ennå.</p><p class="note">Trykk «Ny bet» nederst for å lage den første.</p></div>';
   const byTab = {};

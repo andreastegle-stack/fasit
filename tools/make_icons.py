@@ -1,4 +1,4 @@
-"""Lager app-ikonene for Vennebets (PNG) med Pillow. Kjøres: python make_icons.py <utmappe>"""
+"""Lager app-ikonene for Fasit (PNG) med Pillow. Kjøres: python make_icons.py <utmappe>"""
 import sys, os
 from PIL import Image, ImageDraw, ImageFilter, ImageChops
 
@@ -57,23 +57,23 @@ def mark(scale, accent, accent2, dot):
     d = ImageDraw.Draw(m)
     w = S * scale
     x0 = (S - w) / 2
-    y0 = S * 0.5 - w * 0.42
-    stroke = w * 0.2
-    left_top = (x0 + stroke * 0.5, y0)
-    right_top = (x0 + w - stroke * 0.5, y0)
-    bottom = (S / 2, y0 + w * 0.84)
-    d.line([left_top, bottom], fill=255, width=int(stroke), joint="curve")
-    d.line([right_top, bottom], fill=255, width=int(stroke), joint="curve")
+    stroke = w * 0.19
+    # En «F» med runde ender: loddrett strek, lang toppstrek og kortere midtstrek.
+    xl = S / 2 - w * 0.3
+    yt, yb, ym = S / 2 - w * 0.38, S / 2 + w * 0.38, S / 2 - w * 0.02
+    segs = [((xl, yt), (xl, yb)), ((xl, yt), (xl + w * 0.56, yt)), ((xl, ym), (xl + w * 0.34, ym))]
     r = stroke / 2
-    for (cx, cy) in (left_top, right_top, bottom):
-        d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=255)
+    for a, b in segs:
+        d.line([a, b], fill=255, width=int(stroke))
+        for (cx, cy) in (a, b):
+            d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=255)
     glow = gradient_fill(m.filter(ImageFilter.GaussianBlur(S * 0.03)), accent, accent2)
     glow.putalpha(ImageChops.multiply(glow.getchannel("A"), Image.new("L", (S, S), 150)))
     body = gradient_fill(m, accent, accent2)
     layer = Image.alpha_composite(glow, body)
-    # prikk øverst til høyre for V-en
-    dr = stroke * 0.42
-    dcx, dcy = S / 2, y0 + w * 0.12
+    # gul «fasit»-prikk på linje med midtstreken
+    dr = stroke * 0.5
+    dcx, dcy = xl + w * 0.6, ym
     dm = Image.new("L", (S, S), 0)
     ImageDraw.Draw(dm).ellipse([dcx - dr, dcy - dr, dcx + dr, dcy + dr], fill=255)
     dglow = Image.new("RGBA", (S, S), dot + (0,))
