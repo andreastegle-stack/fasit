@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="nb" data-skin="futur">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Vennebets</title>
+  <meta name="description" content="Veddemål og spådommer i vennegjengen. Appen er dommer og regnskapsfører.">
+  <meta name="theme-color" content="#070A12">
+  <meta name="color-scheme" content="dark">
+
+  <!-- Installerbar app -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- iPhone: fullskjerm fra hjemskjermen, mørk statuslinje over appen -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Vennebets">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="format-detection" content="telephone=no">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <script>
+    // Sett riktig fargetema før første tegning, så skjermen ikke blinker.
+    try { if ((JSON.parse(localStorage.getItem("vennebets-visning")) || {}).skin === "barbie") document.documentElement.setAttribute("data-skin", "barbie"); } catch (e) {}
+  </script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <div class="sheet-backdrop" data-act="close-sheet"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Detaljer">
+    <div class="sheet-panel">
+      <div class="sheet-head">
+        <span class="sheet-grip" aria-hidden="true"></span>
+        <button class="sheet-close" data-act="close-sheet" aria-label="Lukk">✕</button>
+      </div>
+      <div class="sheet-body" id="sheet-body"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <noscript><p style="padding:24px">Vennebets trenger JavaScript.</p></noscript>
+</body>
+</html>
